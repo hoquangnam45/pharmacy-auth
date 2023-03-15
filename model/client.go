@@ -1,20 +1,22 @@
 package model
 
-import (
-	"time"
-)
+import "time"
 
 type Client struct {
 	Id              int `gorm:"primaryKey"`
 	ClientId        string
 	SigningKey      string
-	Method          string
 	VerificationKey string
-	Name            *string
-	ApplicationType int
-	Active          bool
-	RefreshTokenTtl time.Duration
-	AccessTokenTtl  time.Duration
-	AllowOrigin     string
+	SigningMethod   string
 	Issuer          string
+	Active          bool
+	RefreshTokenTtl Duration
+	AccessTokenTtl  Duration
+	AllowOrigin     string
+}
+
+type Duration int64
+
+func (d *Duration) ToDuration() time.Duration {
+	return time.Second * time.Duration(int64(*d))
 }

@@ -5,7 +5,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/hoquangnam45/pharmacy-auth/dto"
 	"github.com/hoquangnam45/pharmacy-auth/model"
-	h "github.com/hoquangnam45/pharmacy-common-go/helper/errorHandler"
 	"github.com/hoquangnam45/pharmacy-common-go/util"
 )
 
@@ -15,15 +14,20 @@ func GenerateTokenPair(clientId string, authentication *dto.Authentication) (*ut
 
 func GenerateAccessToken(refreshToken *model.RefreshToken, client *model.Client) (string, error) {
 	claims := dto.AuthClaims{}
-	claims.ExpiresAt = jwt.NewNumericDate(refreshToken.IssuedAt.Add(client.AccessTokenTtl))
+	claims.ExpiresAt = jwt.NewNumericDate(refreshToken.IssuedAt.Add(client.AccessTokenTtl.ToDuration()))
 	claims.IssuedAt = jwt.NewNumericDate(refreshToken.IssuedAt)
 	claims.ID = uuid.New().String()
 	claims.Issuer = client.Issuer
 	claims.Subject = refreshToken.Subject
 	signingKey := client.SigningKey
-	signingMethod := jwt.GetSigningMethod(client.Method)
+	signingMethod := jwt.GetSigningMethod(client.SigningMethod)
 	token := jwt.NewWithClaims(signingMethod, claims)
-	return h.Lift(token.SignedString)(signingKey).Eval()
+	privateKey, err := jwt.ParseECPrivateKeyFromPEM([]byte(signingKey))
+	if err == nil {
+		return token.SignedString(privateKey)
+	} else {
+		return "", err
+	}
 }
 
 // func (s *Token) RefreshAccessToken(refreshToken string) (string, error) {

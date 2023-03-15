@@ -27,7 +27,7 @@ const HEALTH_CHECK_PATH = "/health"
 
 func main() {
 	advertiseIp, advertisePort, clusterPrefix := common.InitializeEcsService(LISTENNING_PORT)
-	consulClient := common.InitializeConsulClient()
+	consulClient := common.InitializeConsulClient(advertiseIp)
 
 	_ = app.NewClusterLoadBalancer(clusterPrefix, consulClient)
 

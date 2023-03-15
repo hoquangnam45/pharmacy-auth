@@ -27,9 +27,9 @@ func (s *UserInfoMock) CreateUserInfo(username, email, phoneNumber string) (*dto
 	if email == "hoquangnam46@gmail.com" {
 		return &dto.UserInfo{
 			Id:          uuid.New().String(),
-			Email:       "hoquangnam46@gmail.com",
-			Username:    "hoquangnam46",
-			PhoneNumber: "+840912345678",
+			Email:       uuid.New().String(),
+			Username:    uuid.New().String(),
+			PhoneNumber: uuid.New().String(),
 		}, nil
 	}
 	// Already existed user

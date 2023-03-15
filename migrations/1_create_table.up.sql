@@ -18,19 +18,19 @@ CREATE TABLE auth.login_detail(
 CREATE TABLE auth.client(
   id INTEGER NOT NULL PRIMARY KEY,
   client_id VARCHAR(255) NOT NULL UNIQUE,
-	signing_key VARCHAR(255) NOT NULL,
-	verification_key VARCHAR(255) NOT NULL,
-	name VARCHAR(255) NOT NULL,
-	application_type INTEGER NOT NULL,
+	signing_key VARCHAR(2048) NOT NULL,
+	verification_key VARCHAR(2048) NOT NULL,
+  signing_method VARCHAR(255) NOT NULL,
+  issuer VARCHAR(255) NOT NULL,
 	active BOOLEAN DEFAULT TRUE,
-  refresh_token_ttl INTERVAL NOT NULL,
-  access_token_ttl INTERVAL NOT NULL,
+  refresh_token_ttl BIGINT NOT NULL,
+  access_token_ttl BIGINT NOT NULL,
   allow_origin VARCHAR(255) NOT NULL
 );
 
 CREATE TABLE auth.refresh_token(
   id VARCHAR(255) NOT NULL PRIMARY KEY,
-  client_id VARCHAR(255) NOT NULL REFERENCES auth.client(id),
+  client_id INTEGER NOT NULL REFERENCES auth.client(id),
   subject VARCHAR(255) NOT NULL,
   issued_at TIMESTAMP NOT NULL,
   expired_at TIMESTAMP NOT NULL,
@@ -59,12 +59,12 @@ INSERT INTO auth.policy(allow, resource_pattern) VALUES(true, '*');
 
 CREATE TABLE auth.role_policy_association(
   id UUID NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
-  role_id UUID NOT NULL REFERENCES auth.role(id) ON DELETE CASCADE,
+  role_id VARCHAR(255) NOT NULL REFERENCES auth.role(id) ON DELETE CASCADE,
   policy_id UUID NOT NULL REFERENCES auth.policy(id) ON DELETE CASCADE
 );
 ALTER TABLE auth.role_policy_association ADD UNIQUE(role_id, policy_id);
 INSERT INTO auth.role_policy_association(role_id, policy_id)
-SELECT auth.role.id, auth.policy.id FROM auth.role, auth.policy WHERE auth.role.role_name = 'ADMIN' AND auth.policy.allow = TRUE AND auth.policy.resource_pattern = '*';
+SELECT auth.role.id, auth.policy.id FROM auth.role, auth.policy WHERE auth.role.id = 'ADMIN' AND auth.policy.allow = TRUE AND auth.policy.resource_pattern = '*';
 
 CREATE TABLE auth.user_policy_association(
   id UUID NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),

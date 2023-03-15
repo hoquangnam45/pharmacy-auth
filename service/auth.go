@@ -69,7 +69,7 @@ func (s *Auth) Register(registerRequest *dto.GrantRequest) (*dto.Authentication,
 		h.FactoryM(func() (*dto.UserInfo, error) {
 			return s.userInfoClient.CreateUserInfo(registerRequest.Username, registerRequest.Email, registerRequest.PhoneNumber)
 		}),
-		h.PeekE(func(userInfo *dto.UserInfo) error {
+		h.Lift(func(userInfo *dto.UserInfo) (*model.LoginDetail, error) {
 			return h.FlatMap(
 				h.Lift(util.HashPassword)(registerRequest.Password),
 				h.Lift(func(pass string) (*model.LoginDetail, error) {
@@ -82,20 +82,16 @@ func (s *Auth) Register(registerRequest *dto.GrantRequest) (*dto.Authentication,
 						return nil, err
 					}
 					return loginDetail, nil
-				})).Error()
+				})).Eval()
 		}),
-		h.Lift(func(userInfo *dto.UserInfo) (*dto.Authentication, error) {
-			hashedPassword, err := util.HashPassword(registerRequest.Password)
-			if err != nil {
-				return nil, err
+		h.LiftJ(func(loginDetail *model.LoginDetail) *dto.Authentication {
+			return &dto.Authentication{
+				Subject:       loginDetail.UserId,
+				Authenticated: true,
+				Credential:    loginDetail.Password,
+				GrantType:     registerRequest.GrantType,
+				ClientId:      registerRequest.ClientId,
 			}
-			if err := s.db.Create(&model.LoginDetail{
-				UserId:    userInfo.Id,
-				Password:  hashedPassword,
-				Activated: false}).Error; err != nil {
-				return nil, err
-			}
-			return &dto.Authentication{Subject: userInfo.Id, Authenticated: true}, nil
 		}),
 	).EvalWithHandlerE(func(err error) error {
 		requestErr := &request.Error{}
@@ -122,7 +118,7 @@ func (s *Auth) GrantAccess(authentication *dto.Authentication) (*dto.GrantAccess
 	case grantType.Password:
 		fallthrough
 	case grantType.TrustedTp:
-		return s.grantAccessByPassword(authentication, client)
+		return s.grantAccessCommon(authentication, client)
 	case grantType.RefreshToken:
 		return s.grantAccessByRefreshToken(authentication, client)
 	default:
@@ -141,8 +137,8 @@ func (s *Auth) grantAccessByRefreshToken(authentication *dto.Authentication, cli
 		newRefreshToken := &model.RefreshToken{
 			Id:        base64.StdEncoding.EncodeToString([]byte(uuid.New().String())),
 			IssuedAt:  now,
-			ExpiredAt: now.Add(client.RefreshTokenTtl),
-			Client:    client,
+			ExpiredAt: now.Add(client.RefreshTokenTtl.ToDuration()),
+			Client:    *client,
 			Subject:   authentication.Subject,
 		}
 		if err := tx.Create(newRefreshToken).Error; err != nil {
@@ -158,7 +154,7 @@ func (s *Auth) grantAccessByRefreshToken(authentication *dto.Authentication, cli
 			Subject:      newRefreshToken.Subject,
 			IssuedAt:     newRefreshToken.ExpiredAt,
 			ExpiredAt:    newRefreshToken.ExpiredAt,
-			ExpiredIn:    client.AccessTokenTtl,
+			ExpiredIn:    client.AccessTokenTtl.ToDuration(),
 			ClientId:     client.ClientId,
 		}
 		return nil
@@ -168,13 +164,13 @@ func (s *Auth) grantAccessByRefreshToken(authentication *dto.Authentication, cli
 	return grantAccess, nil
 }
 
-func (s *Auth) grantAccessByPassword(authentication *dto.Authentication, client *model.Client) (*dto.GrantAccess, error) {
+func (s *Auth) grantAccessCommon(authentication *dto.Authentication, client *model.Client) (*dto.GrantAccess, error) {
 	now := time.Now()
 	newRefreshToken := &model.RefreshToken{
 		Id:        base64.StdEncoding.EncodeToString([]byte(uuid.New().String())),
 		IssuedAt:  now,
-		ExpiredAt: now.Add(client.RefreshTokenTtl),
-		Client:    client,
+		ExpiredAt: now.Add(client.RefreshTokenTtl.ToDuration()),
+		Client:    *client,
 		Subject:   authentication.Subject,
 	}
 	accessToken, err := utils.GenerateAccessToken(newRefreshToken, client)
@@ -187,7 +183,7 @@ func (s *Auth) grantAccessByPassword(authentication *dto.Authentication, client 
 		Subject:      newRefreshToken.Subject,
 		IssuedAt:     newRefreshToken.ExpiredAt,
 		ExpiredAt:    newRefreshToken.ExpiredAt,
-		ExpiredIn:    client.AccessTokenTtl,
+		ExpiredIn:    client.AccessTokenTtl.ToDuration(),
 		ClientId:     client.ClientId,
 	}
 	if err := s.db.Create(newRefreshToken).Error; err != nil {
@@ -266,13 +262,14 @@ func (s *Auth) refreshTokenAuthenticated(grantRequest *dto.GrantRequest) (*dto.A
 	}
 	return h.FlatMap2(
 		h.Lift(base64.StdEncoding.DecodeString)(refreshToken.ProtectedTicket),
-		h.Lift(util.UnmarshalJsonStruct[dto.UserInfo]),
-		h.Lift(func(userInfo dto.UserInfo) (*dto.Authentication, error) {
+		h.Lift(util.UnmarshalJson(&dto.UserInfo{})),
+		h.Lift(func(userInfo *dto.UserInfo) (*dto.Authentication, error) {
 			return &dto.Authentication{
 				Authenticated: true,
 				Subject:       refreshToken.Subject,
 				Credential:    refreshToken,
 				GrantType:     grantRequest.GrantType,
+				ClientId:      grantRequest.ClientId,
 			}, nil
 		}),
 	).Eval()
