@@ -23,7 +23,6 @@ import (
 )
 
 const LISTENNING_PORT = 3001
-const HEALTH_CHECK_PATH = "/health"
 
 func main() {
 	advertiseIp, advertisePort, clusterPrefix := common.InitializeEcsService(LISTENNING_PORT)
@@ -42,7 +41,7 @@ func main() {
 				Check: &api.AgentServiceCheck{
 					Interval: "30s",
 					Timeout:  "60s",
-					HTTP:     fmt.Sprintf("http://%s:%d/health", advertiseIp, advertisePort),
+					HTTP:     fmt.Sprintf("http://%s:%d/auth/health", advertiseIp, advertisePort),
 					Method:   "GET",
 				}})
 		}),
@@ -83,7 +82,7 @@ func main() {
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
-	r.Get(HEALTH_CHECK_PATH, healthController.HealthCheck)
+	r.Get("/auth/health", healthController.HealthCheck)
 	r.Post("/auth/token", authController.Login)
 	r.Post("/auth/register", authController.Register)
 	r.Post("/auth/activate/{userId}", authController.Activate)

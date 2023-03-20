@@ -17,6 +17,7 @@ var ErrUserNotExist = errors.New("user not exist")
 type IUserInfo interface {
 	FetchUserInfo(username, email, phoneNumber string) (*dto.UserInfo, error)
 	CreateUserInfo(username, email, phoneNumber string) (*dto.UserInfo, error)
+	RemoveUserInfo(username, email, phoneNumber string) error
 }
 
 type UserInfo struct {
@@ -87,4 +88,9 @@ func (s *UserInfo) CreateUserInfo(username, email, phoneNumber string) (*dto.Use
 					}
 				})).Eval()
 		})).Eval()
+}
+
+// TODO: Implement this
+func (s *UserInfo) RemoveUserInfo(username, email, phoneNumber string) error {
+	return nil
 }

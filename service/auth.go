@@ -19,6 +19,8 @@ import (
 	"github.com/hoquangnam45/pharmacy-common-go/util"
 	"github.com/hoquangnam45/pharmacy-common-go/util/request"
 	"github.com/hoquangnam45/pharmacy-common-go/util/response"
+	"github.com/itimofeev/go-saga"
+	"golang.org/x/net/context"
 	"gorm.io/gorm"
 )
 
@@ -65,6 +67,20 @@ func (s *Auth) Login(grantRequest *dto.GrantRequest) (*dto.Authentication, error
 }
 
 func (s *Auth) Register(registerRequest *dto.GrantRequest) (*dto.Authentication, error) {
+	sg := saga.NewSaga(uuid.NewString())
+	sg.AddStep(&saga.Step{
+		Name: "create-user-info",
+		Func: func(ctx context.Context) (*dto.UserInfo, error) {
+			ctx
+			return s.userInfoClient.CreateUserInfo(registerRequest.Username, registerRequest.Email, registerRequest.PhoneNumber)
+		},
+		CompensateFunc: func(ctx context.Context, userInfo *dto.UserInfo) error {
+			return s.userInfoClient.RemoveUserInfo(userInfo.Username, userInfo.Email, userInfo.PhoneNumber)
+		},
+	})
+	store := saga.New()
+	c := saga.NewCoordinator(context.Background(), context.Background(), sg, store)
+	c.Play()
 	return h.FlatMap2(
 		h.FactoryM(func() (*dto.UserInfo, error) {
 			return s.userInfoClient.CreateUserInfo(registerRequest.Username, registerRequest.Email, registerRequest.PhoneNumber)
@@ -138,13 +154,14 @@ func (s *Auth) grantAccessByRefreshToken(authentication *dto.Authentication, cli
 			Id:        base64.StdEncoding.EncodeToString([]byte(uuid.New().String())),
 			IssuedAt:  now,
 			ExpiredAt: now.Add(client.RefreshTokenTtl.ToDuration()),
-			Client:    *client,
+			ClientId:  client.Id,
+			Client:    client,
 			Subject:   authentication.Subject,
 		}
 		if err := tx.Create(newRefreshToken).Error; err != nil {
 			return err
 		}
-		accessToken, err := utils.GenerateAccessToken(newRefreshToken, client)
+		accessToken, err := utils.GenerateAccessToken(newRefreshToken)
 		if err != nil {
 			return err
 		}
@@ -152,7 +169,7 @@ func (s *Auth) grantAccessByRefreshToken(authentication *dto.Authentication, cli
 			RefreshToken: newRefreshToken.Id,
 			AccessToken:  accessToken,
 			Subject:      newRefreshToken.Subject,
-			IssuedAt:     newRefreshToken.ExpiredAt,
+			IssuedAt:     newRefreshToken.IssuedAt,
 			ExpiredAt:    newRefreshToken.ExpiredAt,
 			ExpiredIn:    client.AccessTokenTtl.ToDuration(),
 			ClientId:     client.ClientId,
@@ -170,10 +187,11 @@ func (s *Auth) grantAccessCommon(authentication *dto.Authentication, client *mod
 		Id:        base64.StdEncoding.EncodeToString([]byte(uuid.New().String())),
 		IssuedAt:  now,
 		ExpiredAt: now.Add(client.RefreshTokenTtl.ToDuration()),
-		Client:    *client,
+		Client:    client,
+		ClientId:  client.Id,
 		Subject:   authentication.Subject,
 	}
-	accessToken, err := utils.GenerateAccessToken(newRefreshToken, client)
+	accessToken, err := utils.GenerateAccessToken(newRefreshToken)
 	if err != nil {
 		return nil, err
 	}
@@ -181,7 +199,7 @@ func (s *Auth) grantAccessCommon(authentication *dto.Authentication, client *mod
 		RefreshToken: newRefreshToken.Id,
 		AccessToken:  accessToken,
 		Subject:      newRefreshToken.Subject,
-		IssuedAt:     newRefreshToken.ExpiredAt,
+		IssuedAt:     newRefreshToken.IssuedAt,
 		ExpiredAt:    newRefreshToken.ExpiredAt,
 		ExpiredIn:    client.AccessTokenTtl.ToDuration(),
 		ClientId:     client.ClientId,
@@ -258,6 +276,7 @@ func (s *Auth) refreshTokenAuthenticated(grantRequest *dto.GrantRequest) (*dto.A
 		return nil, err
 	}
 	if time.Now().After(refreshToken.ExpiredAt) {
+		s.db.Where(refreshToken).Delete(&model.RefreshToken{})
 		return nil, ErrUnauthorizedAccess
 	}
 	return h.FlatMap2(

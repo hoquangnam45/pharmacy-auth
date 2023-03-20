@@ -12,8 +12,9 @@ func GenerateTokenPair(clientId string, authentication *dto.Authentication) (*ut
 	return nil, nil
 }
 
-func GenerateAccessToken(refreshToken *model.RefreshToken, client *model.Client) (string, error) {
+func GenerateAccessToken(refreshToken *model.RefreshToken) (string, error) {
 	claims := dto.AuthClaims{}
+	client := refreshToken.Client
 	claims.ExpiresAt = jwt.NewNumericDate(refreshToken.IssuedAt.Add(client.AccessTokenTtl.ToDuration()))
 	claims.IssuedAt = jwt.NewNumericDate(refreshToken.IssuedAt)
 	claims.ID = uuid.New().String()

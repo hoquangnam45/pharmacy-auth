@@ -3,7 +3,7 @@ package model
 import "time"
 
 type Client struct {
-	Id              int `gorm:"primaryKey"`
+	Id              *int `gorm:"primaryKey"`
 	ClientId        string
 	SigningKey      string
 	VerificationKey string
