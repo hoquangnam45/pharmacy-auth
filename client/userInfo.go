@@ -7,7 +7,7 @@ import (
 
 	"github.com/hoquangnam45/pharmacy-auth/app"
 	"github.com/hoquangnam45/pharmacy-auth/dto"
-	h "github.com/hoquangnam45/pharmacy-common-go/helper/errorHandler"
+	h "github.com/hoquangnam45/pharmacy-common-go/util/errorHandler"
 
 	"github.com/hoquangnam45/pharmacy-common-go/util/request"
 )

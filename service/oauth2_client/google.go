@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/hoquangnam45/pharmacy-auth/dto"
-	h "github.com/hoquangnam45/pharmacy-common-go/helper/errorHandler"
+	h "github.com/hoquangnam45/pharmacy-common-go/util/errorHandler"
 	"google.golang.org/api/googleapi"
 	"google.golang.org/api/oauth2/v2"
 )

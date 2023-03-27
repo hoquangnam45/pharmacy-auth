@@ -1,13 +1,14 @@
 package controller
 
 import (
+	"io"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/hoquangnam45/pharmacy-auth/dto"
 	"github.com/hoquangnam45/pharmacy-auth/service"
-	h "github.com/hoquangnam45/pharmacy-common-go/helper/errorHandler"
 	"github.com/hoquangnam45/pharmacy-common-go/util"
+	h "github.com/hoquangnam45/pharmacy-common-go/util/errorHandler"
 	"github.com/hoquangnam45/pharmacy-common-go/util/response"
 )
 
@@ -21,7 +22,7 @@ func NewAuthController(authService *service.Auth) *AuthController {
 
 func (c *AuthController) Login(w http.ResponseWriter, r *http.Request) {
 	h.FlatMap4(
-		h.Lift(util.ReadAllThenClose)(r.Body),
+		h.Lift(util.ReadAllThenClose[io.ReadCloser])(r.Body),
 		h.Lift(util.UnmarshalJson(&dto.GrantRequest{})),
 		h.Lift(c.authService.Login),
 		h.Lift(c.authService.GrantAccess),
@@ -38,7 +39,7 @@ func (c *AuthController) Login(w http.ResponseWriter, r *http.Request) {
 
 func (c *AuthController) Register(w http.ResponseWriter, r *http.Request) {
 	h.FlatMap4(
-		h.Lift(util.ReadAllThenClose)(r.Body),
+		h.Lift(util.ReadAllThenClose[io.ReadCloser])(r.Body),
 		h.Lift(util.UnmarshalJson(&dto.GrantRequest{})),
 		h.Lift(c.authService.Register),
 		h.Lift(c.authService.GrantAccess),
@@ -67,7 +68,7 @@ func (c *AuthController) Activate(w http.ResponseWriter, r *http.Request) {
 
 func (c *AuthController) Logout(w http.ResponseWriter, r *http.Request) {
 	h.FlatMap2(
-		h.Lift(util.ReadAllThenClose)(r.Body),
+		h.Lift(util.ReadAllThenClose[io.ReadCloser])(r.Body),
 		h.Lift(util.UnmarshalJson(&dto.RevokeRequest{})),
 		h.PeekE(func(revokeRequest *dto.RevokeRequest) error {
 			return c.authService.Logout(revokeRequest.RefreshToken)
@@ -82,7 +83,7 @@ func (c *AuthController) Logout(w http.ResponseWriter, r *http.Request) {
 
 func (c *AuthController) CheckPermission(w http.ResponseWriter, r *http.Request) {
 	h.FlatMap2(
-		h.Lift(util.ReadAllThenClose)(r.Body),
+		h.Lift(util.ReadAllThenClose[io.ReadCloser])(r.Body),
 		h.Lift(util.UnmarshalJson(&dto.RevokeRequest{})),
 		h.PeekE(func(revokeRequest *dto.RevokeRequest) error {
 			return c.authService.CheckPermission()

@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"github.com/hoquangnam45/pharmacy-auth/dto"
-	h "github.com/hoquangnam45/pharmacy-common-go/helper/errorHandler"
 	"github.com/hoquangnam45/pharmacy-common-go/util"
+	h "github.com/hoquangnam45/pharmacy-common-go/util/errorHandler"
 )
 
 func FetchFbUserInfo(accessToken string) (*dto.UserInfo, error) {
@@ -20,7 +20,7 @@ func FetchFbUserInfo(accessToken string) (*dto.UserInfo, error) {
 		h.LiftJ(func(res *http.Response) io.ReadCloser {
 			return res.Body
 		}),
-		h.Lift(util.ReadAllThenClose),
+		h.Lift(util.ReadAllThenClose[io.ReadCloser]),
 		h.Lift(util.UnmarshalJson(map[string]any{})),
 		h.LiftJ(func(userDetail map[string]any) *dto.UserInfo {
 			return &dto.UserInfo{

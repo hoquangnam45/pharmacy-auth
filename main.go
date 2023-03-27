@@ -14,9 +14,9 @@ import (
 	"github.com/hoquangnam45/pharmacy-auth/controller"
 	"github.com/hoquangnam45/pharmacy-auth/service"
 	"github.com/hoquangnam45/pharmacy-common-go/helper/common"
-	"github.com/hoquangnam45/pharmacy-common-go/helper/env"
-	h "github.com/hoquangnam45/pharmacy-common-go/helper/errorHandler"
 	"github.com/hoquangnam45/pharmacy-common-go/microservice/consul"
+	"github.com/hoquangnam45/pharmacy-common-go/util"
+	h "github.com/hoquangnam45/pharmacy-common-go/util/errorHandler"
 	_ "github.com/lib/pq"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
@@ -34,7 +34,7 @@ func main() {
 		h.FactoryE(consulClient.ConnectToConsul),
 		h.LiftFactoryE[any](func() error {
 			return consulClient.RegisterService(&api.AgentServiceRegistration{
-				Name:    env.GetEnvOrDefault("SERVICE_NAME", "pharmacy-auth-svc"),
+				Name:    util.GetEnvOrDefault("SERVICE_NAME", "pharmacy-auth-svc"),
 				ID:      advertiseIp + ":" + strconv.Itoa(advertisePort),
 				Address: advertiseIp,
 				Port:    advertisePort,
@@ -49,7 +49,7 @@ func main() {
 
 	kvClient := consul.NewKvClient(consulClient)
 
-	kvPrefix := env.GetEnvOrDefault("KV_PREFIX", "local")
+	kvPrefix := util.GetEnvOrDefault("KV_PREFIX", "local")
 	postgresHost := h.Lift(kvClient.GetKV)(kvPrefix + "/POSTGRES_HOST").PanicEval()
 	postgresUsername := h.Lift(kvClient.GetKV)(kvPrefix + "/POSTGRES_USERNAME").PanicEval()
 	postgresPassword := h.Lift(kvClient.GetKV)(kvPrefix + "/POSTGRES_PASSWORD").PanicEval()
@@ -71,7 +71,7 @@ func main() {
 				SingularTable: true,
 			},
 		},
-		env.GetEnvOrDefault("MIGRATE_PATH", "./migrations"), 1)
+		util.GetEnvOrDefault("MIGRATE_PATH", "./migrations"), 1)
 
 	// userInfoClient := client.NewUserInfoClient(lb)
 	userInfoClientMock := &client.UserInfoMock{}

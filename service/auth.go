@@ -15,8 +15,8 @@ import (
 	"github.com/hoquangnam45/pharmacy-auth/service/oauth2_client"
 	"github.com/hoquangnam45/pharmacy-auth/utils"
 	"github.com/hoquangnam45/pharmacy-common-go/helper/db"
-	h "github.com/hoquangnam45/pharmacy-common-go/helper/errorHandler"
 	"github.com/hoquangnam45/pharmacy-common-go/util"
+	h "github.com/hoquangnam45/pharmacy-common-go/util/errorHandler"
 	"github.com/hoquangnam45/pharmacy-common-go/util/request"
 	"github.com/hoquangnam45/pharmacy-common-go/util/response"
 	"github.com/itimofeev/go-saga"
@@ -67,11 +67,10 @@ func (s *Auth) Login(grantRequest *dto.GrantRequest) (*dto.Authentication, error
 }
 
 func (s *Auth) Register(registerRequest *dto.GrantRequest) (*dto.Authentication, error) {
-	sg := saga.NewSaga(uuid.NewString())
+	sg := saga.NewSaga("register-user")
 	sg.AddStep(&saga.Step{
 		Name: "create-user-info",
 		Func: func(ctx context.Context) (*dto.UserInfo, error) {
-			ctx
 			return s.userInfoClient.CreateUserInfo(registerRequest.Username, registerRequest.Email, registerRequest.PhoneNumber)
 		},
 		CompensateFunc: func(ctx context.Context, userInfo *dto.UserInfo) error {
