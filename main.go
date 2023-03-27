@@ -12,7 +12,7 @@ import (
 	"github.com/hoquangnam45/pharmacy-auth/app"
 	"github.com/hoquangnam45/pharmacy-auth/client"
 	"github.com/hoquangnam45/pharmacy-auth/controller"
-	"github.com/hoquangnam45/pharmacy-auth/service"
+	"github.com/hoquangnam45/pharmacy-auth/internal/service"
 	"github.com/hoquangnam45/pharmacy-common-go/helper/common"
 	"github.com/hoquangnam45/pharmacy-common-go/microservice/consul"
 	"github.com/hoquangnam45/pharmacy-common-go/util"
@@ -26,7 +26,7 @@ const LISTENNING_PORT = 3001
 
 func main() {
 	advertiseIp, advertisePort, clusterPrefix := common.InitializeEcsService(LISTENNING_PORT)
-	consulClient := common.InitializeConsulClient(advertiseIp)
+	consulClient := common.InitializeConsulClient()
 
 	_ = app.NewClusterLoadBalancer(clusterPrefix, consulClient)
 

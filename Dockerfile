@@ -5,6 +5,7 @@ RUN apk add make && GOPATH=$(pwd)/cache make all
 
 FROM alpine:3.17.2
 RUN apk add bind-tools
-COPY --from=0 /tmp/pharmacy-auth/build/pharmacy-auth /usr/bin/
-COPY ./migrations /tmp/migrations
-ENTRYPOINT ["pharmacy-auth"]
+COPY --from=builder /tmp/pharmacy-auth/build/pharmacy-auth /app
+COPY ./migrations /app/migrations
+WORKDIR /app
+ENTRYPOINT ["./pharmacy-auth"]

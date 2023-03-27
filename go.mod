@@ -1,50 +1,59 @@
 module github.com/hoquangnam45/pharmacy-auth
 
-go 1.19
+go 1.18
 
 require (
 	github.com/go-chi/chi/v5 v5.0.8
+	github.com/go-kratos/kratos/v2 v2.6.1
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/golang-migrate/migrate/v4 v4.15.2
 	github.com/google/uuid v1.3.0
-	github.com/hashicorp/consul/api v1.18.0
+	github.com/google/wire v0.5.0
+	github.com/hashicorp/consul/api v1.19.1
 	github.com/hellofresh/health-go/v5 v5.0.0
 	github.com/hoquangnam45/pharmacy-common-go v0.0.0-20230224032410-75e29088d9f7
 	github.com/itimofeev/go-saga v0.1.0
 	github.com/lib/pq v1.10.7
 	github.com/redis/go-redis/v9 v9.0.2
-	github.com/stretchr/testify v1.8.1
+	go.uber.org/automaxprocs v1.5.1
 	google.golang.org/api v0.112.0
+	google.golang.org/genproto v0.0.0-20230303212802-e74f57abe488
+	google.golang.org/grpc v1.53.0
+	google.golang.org/protobuf v1.28.1
 	gorm.io/gorm v1.24.5
 )
 
 require (
 	cloud.google.com/go/compute v1.18.0 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
-	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/fsnotify/fsnotify v1.5.4 // indirect
+	github.com/go-kratos/aegis v0.1.4 // indirect
+	github.com/go-kratos/kratos/contrib/config/consul/v2 v2.0.0-20230326145430-f03f5f89881f // indirect
+	github.com/go-logr/logr v1.2.3 // indirect
+	github.com/go-logr/stdr v1.2.2 // indirect
+	github.com/go-playground/form/v4 v4.2.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.2.3 // indirect
 	github.com/googleapis/gax-go/v2 v2.7.0 // indirect
-	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/gorilla/mux v1.8.0 // indirect
+	github.com/imdario/mergo v0.3.12 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	golang.org/x/oauth2 v0.6.0 // indirect
+	golang.org/x/sync v0.1.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20230303212802-e74f57abe488 // indirect
-	google.golang.org/grpc v1.53.0 // indirect
-	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 require (
-	github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da // indirect
+	github.com/armon/go-metrics v0.3.10 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/fatih/color v1.9.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.1 // indirect
-	github.com/hashicorp/go-hclog v0.12.0 // indirect
-	github.com/hashicorp/go-immutable-radix v1.0.0 // indirect
+	github.com/hashicorp/go-hclog v0.14.1 // indirect
+	github.com/hashicorp/go-immutable-radix v1.3.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-rootcerts v1.0.2 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect

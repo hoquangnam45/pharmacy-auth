@@ -1,8 +1,8 @@
 package dto
 
 import (
-	"github.com/hoquangnam45/pharmacy-auth/constant/grantType"
-	"github.com/hoquangnam45/pharmacy-auth/constant/oauthProviderType"
+	"github.com/hoquangnam45/pharmacy-auth/internal/constant/grantType"
+	"github.com/hoquangnam45/pharmacy-auth/internal/constant/oauthProviderType"
 )
 
 type GrantRequest struct {
@@ -15,7 +15,7 @@ type GrantRequest struct {
 
 type TrustedThirdPartyGrantRequest struct {
 	Provider    oauthProviderType.OAuthProvider `json:"provider"`
-	AccessToken string                     `json:"accessToken"`
+	AccessToken string                          `json:"accessToken"`
 }
 
 type PasswordGrantRequest struct {

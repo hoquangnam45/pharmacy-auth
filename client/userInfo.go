@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/hoquangnam45/pharmacy-auth/app"
 	"github.com/hoquangnam45/pharmacy-auth/dto"
+	"github.com/hoquangnam45/pharmacy-auth/internal/util"
 	h "github.com/hoquangnam45/pharmacy-common-go/util/errorHandler"
 
 	"github.com/hoquangnam45/pharmacy-common-go/util/request"
@@ -21,10 +21,10 @@ type IUserInfo interface {
 }
 
 type UserInfo struct {
-	lb *app.LoadBalancer
+	lb *util.LoadBalancer
 }
 
-func NewUserInfoClient(lb *app.LoadBalancer) *UserInfo {
+func NewUserInfoClient(lb *util.LoadBalancer) *UserInfo {
 	return &UserInfo{lb}
 }
 

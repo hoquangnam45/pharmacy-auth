@@ -1,7 +1,7 @@
 package dto
 
 import (
-	"github.com/hoquangnam45/pharmacy-auth/constant/grantType"
+	"github.com/hoquangnam45/pharmacy-auth/internal/constant/grantType"
 )
 
 type Authentication struct {

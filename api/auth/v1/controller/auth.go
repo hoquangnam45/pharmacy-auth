@@ -6,7 +6,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/hoquangnam45/pharmacy-auth/dto"
-	"github.com/hoquangnam45/pharmacy-auth/service"
+	"github.com/hoquangnam45/pharmacy-auth/internal/service"
 	"github.com/hoquangnam45/pharmacy-common-go/util"
 	h "github.com/hoquangnam45/pharmacy-common-go/util/errorHandler"
 	"github.com/hoquangnam45/pharmacy-common-go/util/response"

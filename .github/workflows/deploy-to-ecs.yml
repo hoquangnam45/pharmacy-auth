@@ -54,9 +54,9 @@ jobs:
       CONTAINER_HEALTH_CHECK_CMD: curl http://localhost:3001/health/
       NETWORK_MODE: BRIDGE
       ECS_CONSUL_SERVER_URL: pharmacy-consul-svc.pharmacy-cluster
-      EXPORTED_ENVIRONMENTS: ECS_CONSUL_SERVER_URL, KV_PREFIX, MIGRATE_PATH
+      EXPORTED_ENVIRONMENTS: ECS_CONSUL_SERVER_URL, KV_PREFIX, MIGRATE_PATH, NETWORK_MODE
       KV_PREFIX: ${{ matrix.environment }}
-      MIGRATE_PATH: "/tmp/migrations/"
+      MIGRATE_PATH: "/app/migrations/"
     steps:
       - run: |
           echo "STACK_ID=$ACTIVE_ENVIRONMENT-$PROJECT_NAME-ecsDeploymentStack" >> $GITHUB_ENV
