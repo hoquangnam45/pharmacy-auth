@@ -1,7 +1,7 @@
 package server
 
 import (
-	v1 "github.com/hoquangnam45/pharmacy-auth/api/helloworld/v1"
+	v1 "github.com/hoquangnam45/pharmacy-auth/api/auth/v1"
 	"github.com/hoquangnam45/pharmacy-auth/internal/conf"
 	"github.com/hoquangnam45/pharmacy-auth/internal/service"
 
@@ -11,7 +11,7 @@ import (
 )
 
 // NewHTTPServer new an HTTP server.
-func NewHTTPServer(c *conf.Server, greeter *service.GreeterService, logger log.Logger) *http.Server {
+func NewHTTPServer(c *conf.Server, authService *service.Auth, healthCheckService *service.HealthCheckService, logger log.Logger) *http.Server {
 	var opts = []http.ServerOption{
 		http.Middleware(
 			recovery.Recovery(),
@@ -27,6 +27,7 @@ func NewHTTPServer(c *conf.Server, greeter *service.GreeterService, logger log.L
 		opts = append(opts, http.Timeout(c.Http.Timeout.AsDuration()))
 	}
 	srv := http.NewServer(opts...)
-	v1.RegisterGreeterHTTPServer(srv, greeter)
+	v1.RegisterAuthHTTPServer(srv, authService)
+	v1.RegisterHealthCheckHTTPServer(srv, healthCheckService)
 	return srv
 }

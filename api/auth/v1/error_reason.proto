@@ -1,13 +1,18 @@
 syntax = "proto3";
 
-package helloworld.v1;
+package auth.v1;
 
-option go_package = "github.com/hoquangnam45/pharmacy-auth/api/helloworld/v1;v1";
+import "errors/errors.proto";
+
+option go_package = "github.com/hoquangnam45/pharmacy-auth/api/auth/v1;v1";
 option java_multiple_files = true;
-option java_package = "helloworld.v1";
-option objc_class_prefix = "APIHelloworldV1";
+option java_package = "dev.kratos.api.auth.v1";
+option java_outer_classname = "ErrorProtoV1";
 
 enum ErrorReason {
-  GREETER_UNSPECIFIED = 0;
-  USER_NOT_FOUND = 1;
+  // Set default error code.
+  option (errors.default_code) = 500;
+  
+  USER_NOT_FOUND = 0 [(errors.code) = 404];
+  CONTENT_MISSING = 1 [(errors.code) = 400];
 }

@@ -1,7 +1,7 @@
 package server
 
 import (
-	v1 "github.com/hoquangnam45/pharmacy-auth/api/helloworld/v1"
+	v1 "github.com/hoquangnam45/pharmacy-auth/api/auth/v1"
 	"github.com/hoquangnam45/pharmacy-auth/internal/conf"
 	"github.com/hoquangnam45/pharmacy-auth/internal/service"
 
@@ -11,7 +11,7 @@ import (
 )
 
 // NewGRPCServer new a gRPC server.
-func NewGRPCServer(c *conf.Server, greeter *service.GreeterService, logger log.Logger) *grpc.Server {
+func NewGRPCServer(c *conf.Server, authService *service.Auth, healthCheckService *service.HealthCheckService, logger log.Logger) *grpc.Server {
 	var opts = []grpc.ServerOption{
 		grpc.Middleware(
 			recovery.Recovery(),
@@ -27,6 +27,7 @@ func NewGRPCServer(c *conf.Server, greeter *service.GreeterService, logger log.L
 		opts = append(opts, grpc.Timeout(c.Grpc.Timeout.AsDuration()))
 	}
 	srv := grpc.NewServer(opts...)
-	v1.RegisterGreeterServer(srv, greeter)
+	v1.RegisterAuthServer(srv, authService)
+	v1.RegisterHealthCheckServer(srv, healthCheckService)
 	return srv
 }

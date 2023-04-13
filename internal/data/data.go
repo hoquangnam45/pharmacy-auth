@@ -1,9 +1,11 @@
 package data
 
 import (
+	"database/sql"
+
 	"github.com/hoquangnam45/pharmacy-auth/internal/conf"
 	"github.com/hoquangnam45/pharmacy-common-go/helper/common"
-	"github.com/hoquangnam45/pharmacy-common-go/util"
+	h "github.com/hoquangnam45/pharmacy-common-go/util/errorHandler"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 
@@ -12,7 +14,7 @@ import (
 )
 
 // ProviderSet is data providers.
-var ProviderSet = wire.NewSet(NewData, NewGreeterRepo)
+var ProviderSet = wire.NewSet(NewData, NewLoginDetailRepo, NewRefreshTokenRepo, NewTransactionManager, NewClientRepo)
 
 // Data .
 type Data struct {
@@ -21,21 +23,28 @@ type Data struct {
 
 // NewData .
 func NewData(c *conf.Data, logger log.Logger) (*Data, func(), error) {
-	common.InitializePostgresDb(
-		postgresHost,
-		postgresUsername,
-		postgresPassword,
-		postgresDb,
-		postgresPort,
+	dbConfig := c.Database
+	db := common.InitializePostgresDb(
+		dbConfig.Host,
+		dbConfig.Username,
+		dbConfig.Password,
+		dbConfig.Database,
+		int(dbConfig.Port),
 		&gorm.Config{
 			NamingStrategy: schema.NamingStrategy{
 				TablePrefix:   "auth.",
 				SingularTable: true,
 			},
 		},
-		util.GetEnvOrDefault("MIGRATE_PATH", "./migrations"), 1)
+		dbConfig.MigratePath,
+		1)
 	cleanup := func() {
-		log.NewHelper(logger).Info("closing the data resources")
+		h.FlatMap(
+			h.FactoryM(db.DB),
+			h.PeekE(func(con *sql.DB) error {
+				return con.Close()
+			}),
+		).PanicEval()
 	}
-	return &Data{}, cleanup, nil
+	return &Data{db}, cleanup, nil
 }

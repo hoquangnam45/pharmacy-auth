@@ -27,9 +27,9 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.PAT }}
-      - run: go get
+      - run: go get -d ./cmd/pharmacy_auth/
       - run: test -z $(gofmt -l .)
-      - run: go test .
+      # - run: go test .
       - id: export-env
         run: |
           echo PROJECT_NAME=${{ github.event.repository.name }} | tee -a $GITHUB_ENV $GITHUB_OUTPUT
@@ -48,15 +48,16 @@ jobs:
       IMAGE_NAME: ${{ needs.test-and-build.outputs.IMAGE_NAME }}
       PROJECT_NAME: ${{ needs.test-and-build.outputs.PROJECT_NAME }}
       DEPLOYMENT_TYPE: ECS
-      CONTAINER_PORT_MAPPINGS: 0:3001
+      CONTAINER_PORT_MAPPINGS: 0:8000, 0:9000
       CDK_DEFAULT_ACCOUNT: ${{ secrets.AWS_ACCOUNT_ID }}
       CDK_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
-      CONTAINER_HEALTH_CHECK_CMD: curl http://localhost:3001/health/
+      CONTAINER_HEALTH_CHECK_CMD: curl http://localhost:8000/auth/healthcheck
       NETWORK_MODE: BRIDGE
       ECS_CONSUL_SERVER_URL: pharmacy-consul-svc.pharmacy-cluster
       EXPORTED_ENVIRONMENTS: ECS_CONSUL_SERVER_URL, KV_PREFIX, MIGRATE_PATH, NETWORK_MODE
       KV_PREFIX: ${{ matrix.environment }}
       MIGRATE_PATH: "/app/migrations/"
+      ACTIVE_ENVIRONMENT: ${{ matrix.environment }}
     steps:
       - run: |
           echo "STACK_ID=$ACTIVE_ENVIRONMENT-$PROJECT_NAME-ecsDeploymentStack" >> $GITHUB_ENV

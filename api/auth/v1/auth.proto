@@ -1,0 +1,83 @@
+syntax = "proto3";
+
+package auth.v1;
+
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/struct.proto";
+
+option go_package = "github.com/hoquangnam45/pharmacy-auth/api/auth/v1;v1";
+option java_multiple_files = true;
+option java_package = "dev.kratos.api.auth.v1";
+option java_outer_classname = "AuthProtoV1";
+
+service Auth {
+  rpc Register (GrantRequest) returns (GrantAccess) {
+    option (google.api.http) = {
+      post: "/auth/register"
+      body: "*"
+    };
+  }
+  rpc Token (GrantRequest) returns (GrantAccess) {
+    option (google.api.http) = {
+      post: "/auth/token"
+      body: "*"
+    };
+  }
+  rpc Logout (LogoutRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/auth/logout"
+      body: "*"
+    };
+  }
+  rpc Activate (ActivateRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/auth/activate/{userId}"
+      body: "*"
+    };
+  }
+}
+
+service HealthCheck {
+  rpc HealthCheck (google.protobuf.Empty) returns (google.protobuf.Struct) {
+    option (google.api.http) = {
+      get: "/auth/healthcheck"
+    };
+  }
+}
+
+message LogoutRequest {
+  string refreshToken = 1;
+}
+
+message ActivateRequest {
+  string userId = 1;
+}
+
+message GrantRequest {
+  string grantType = 1;
+  string clientId = 2;
+
+  optional string provider = 3;
+  optional string accessToken = 4;
+
+  optional string username = 5;
+  optional string password = 6;
+  optional string phoneNumber = 7;
+  optional string email = 8;
+
+  optional string refreshToken = 9;
+}
+
+// The response message containing the greetings
+message GrantAccess {
+  string accessToken = 1;
+  string refreshToken = 2;
+  string subject = 3;
+  google.protobuf.Duration expiredIn = 4;
+  google.protobuf.Timestamp issuedAt = 5;
+  google.protobuf.Timestamp expiredAt = 6;
+  string clientId = 7;
+}
