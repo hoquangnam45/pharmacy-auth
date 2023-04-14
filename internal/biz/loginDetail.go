@@ -56,6 +56,18 @@ type ClientRepo interface {
 	FindByClientID(clientId string) (*Client, error)
 }
 
+func Query[T any](txManager TransactionManager, queryFn func() (T, error)) (T, error) {
+	var ret T
+	err := txManager.Run(func() error {
+		retI, err := queryFn()
+		if err == nil {
+			ret = retI
+		}
+		return err
+	})
+	return ret, err
+}
+
 type TrustedTpInfoFetcher func(accessToken string) (*UserInfo, error)
 
 type LoginDetailUsecase struct {
@@ -67,8 +79,15 @@ type LoginDetailUsecase struct {
 	log *log.Helper
 }
 
-func NewLoginDetailUseCase(repo LoginDetailRepo, clientRepo ClientRepo, refreshTokenRepo RefreshTokenRepo, logger log.Logger, transactionManager TransactionManager) *LoginDetailUsecase {
-	return &LoginDetailUsecase{repo: repo, refreshTokenRepo: refreshTokenRepo, clientRepo: clientRepo, log: log.NewHelper(logger), TransactionManager: transactionManager}
+func NewLoginDetailUseCase(userInfoClient UserInfoClient, repo LoginDetailRepo, clientRepo ClientRepo, refreshTokenRepo RefreshTokenRepo, logger log.Logger, transactionManager TransactionManager) *LoginDetailUsecase {
+	return &LoginDetailUsecase{
+		repo:               repo,
+		refreshTokenRepo:   refreshTokenRepo,
+		clientRepo:         clientRepo,
+		log:                log.NewHelper(logger),
+		TransactionManager: transactionManager,
+		userInfoClient:     userInfoClient,
+	}
 }
 
 func (s *LoginDetailUsecase) GenerateAccessToken(refreshToken *RefreshToken) (string, error) {
@@ -140,7 +159,7 @@ func (s *LoginDetailUsecase) Login(grantRequest *GrantRequest) (*Authentication,
 func (s *LoginDetailUsecase) Register(registerRequest *GrantRequest) (*Authentication, error) {
 	return h.FlatMap2(
 		h.FactoryM(func() (*UserInfo, error) {
-			return s.userInfoClient.CreateUserInfo(*registerRequest.Username, *registerRequest.Email, *registerRequest.PhoneNumber)
+			return s.userInfoClient.CreateUserInfo(registerRequest.Username, registerRequest.Email, registerRequest.PhoneNumber)
 		}),
 		h.Lift(func(userInfo *UserInfo) (*LoginDetail, error) {
 			return h.FlatMap(
@@ -269,8 +288,8 @@ func (s *LoginDetailUsecase) trustedTpAuthenticated(fetcher TrustedTpInfoFetcher
 	return h.FlatMap2(
 		h.Lift(fetcher)(accessToken),
 		h.Lift(func(userInfo *UserInfo) (*UserInfo, error) {
-			if userInfo, err := s.userInfoClient.FetchUserInfo("", userInfo.Email, ""); errors.Is(err, ErrUserNotExist) {
-				return s.userInfoClient.CreateUserInfo("", userInfo.Email, "")
+			if userInfo, err := s.userInfoClient.FetchUserInfo(nil, &userInfo.Email, nil); errors.Is(err, ErrUserNotExist) {
+				return s.userInfoClient.CreateUserInfo(nil, &userInfo.Email, nil)
 			} else {
 				return userInfo, nil
 			}
@@ -296,7 +315,7 @@ func (s *LoginDetailUsecase) trustedTpAuthenticated(fetcher TrustedTpInfoFetcher
 func (s *LoginDetailUsecase) passwordAuthenticated(loginRequest *GrantRequest) (*Authentication, error) {
 	return h.FlatMap(
 		h.FactoryM(func() (*UserInfo, error) {
-			return s.userInfoClient.FetchUserInfo(*loginRequest.Username, *loginRequest.Email, *loginRequest.PhoneNumber)
+			return s.userInfoClient.FetchUserInfo(loginRequest.Username, loginRequest.Email, loginRequest.PhoneNumber)
 		}),
 		h.Lift(func(userInfo *UserInfo) (*Authentication, error) {
 			loginDetail, err := s.repo.FindByUserId(userInfo.Id)
@@ -356,10 +375,6 @@ func (s *LoginDetailUsecase) refreshTokenAuthenticated(grantRequest *GrantReques
 		return nil
 	})
 	return auth, err
-}
-
-func (s *LoginDetailUsecase) CreateUserInfo(username string, email string, phoneNumber string) (*UserInfo, error) {
-	return s.userInfoClient.CreateUserInfo(username, email, phoneNumber)
 }
 
 func (s *LoginDetailUsecase) CheckPermission() error {

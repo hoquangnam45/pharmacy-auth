@@ -13,10 +13,10 @@ import (
 
 var ErrUserNotExist = errors.New("user not exist")
 
-type IUserInfoClient interface {
-	FetchUserInfo(username, email, phoneNumber string) (*UserInfo, error)
-	CreateUserInfo(username, email, phoneNumber string) (*UserInfo, error)
-	RemoveUserInfo(username, email, phoneNumber string) error
+type UserInfoClient interface {
+	FetchUserInfo(username, email, phoneNumber *string) (*UserInfo, error)
+	CreateUserInfo(username, email, phoneNumber *string) (*UserInfo, error)
+	RemoveUserInfo(username, email, phoneNumber *string) error
 }
 
 type UserInfo struct {
@@ -26,24 +26,24 @@ type UserInfo struct {
 	PhoneNumber string
 }
 
-type UserInfoClient struct {
+type userInfoClient struct {
 	lb *util.LoadBalancer
 }
 
-func NewUserInfoClient(lb *util.LoadBalancer) IUserInfoClient {
-	return &UserInfoClient{lb}
+func NewUserInfoClient(lb *util.LoadBalancer) UserInfoClient {
+	return &userInfoClient{lb}
 }
 
-func (s *UserInfoClient) FetchUserInfo(username, email, phoneNumber string) (*UserInfo, error) {
+func (s *userInfoClient) FetchUserInfo(username, email, phoneNumber *string) (*UserInfo, error) {
 	return h.FlatMap3(
 		h.Lift(s.lb.LoadBalancing)("pharmacy-user-svc"),
 		h.Lift(func(addr string) (string, error) {
 			query := ""
-			if email != "" {
+			if email != nil {
 				query = fmt.Sprintf("email=%s", email)
-			} else if phoneNumber != "" {
+			} else if phoneNumber != nil {
 				query = fmt.Sprintf("phoneNumber=%s", email)
-			} else if username != "" {
+			} else if username != nil {
 				query = fmt.Sprintf("username=%s", email)
 			}
 			return fmt.Sprintf("%s/user?%s", addr, query), nil
@@ -66,16 +66,16 @@ func (s *UserInfoClient) FetchUserInfo(username, email, phoneNumber string) (*Us
 		})).Eval()
 }
 
-func (s *UserInfoClient) CreateUserInfo(username, email, phoneNumber string) (*UserInfo, error) {
+func (s *userInfoClient) CreateUserInfo(username, email, phoneNumber *string) (*UserInfo, error) {
 	return h.FlatMap3(
 		h.Lift(s.lb.LoadBalancing)("pharmacy-user-svc"),
 		h.Lift(func(addr string) (string, error) {
 			query := ""
-			if email != "" {
+			if email != nil {
 				query = fmt.Sprintf("email=%s", email)
-			} else if phoneNumber != "" {
+			} else if phoneNumber != nil {
 				query = fmt.Sprintf("phoneNumber=%s", email)
-			} else if username != "" {
+			} else if username != nil {
 				query = fmt.Sprintf("username=%s", email)
 			}
 			return fmt.Sprintf("%s/user?%s", addr, query), nil
@@ -97,6 +97,6 @@ func (s *UserInfoClient) CreateUserInfo(username, email, phoneNumber string) (*U
 }
 
 // TODO: Implement this
-func (s *UserInfoClient) RemoveUserInfo(username, email, phoneNumber string) error {
+func (s *userInfoClient) RemoveUserInfo(username, email, phoneNumber *string) error {
 	return nil
 }

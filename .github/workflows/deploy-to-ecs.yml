@@ -54,9 +54,14 @@ jobs:
       CONTAINER_HEALTH_CHECK_CMD: curl http://localhost:8000/auth/healthcheck
       NETWORK_MODE: BRIDGE
       ECS_CONSUL_SERVER_URL: pharmacy-consul-svc.pharmacy-cluster
-      EXPORTED_ENVIRONMENTS: ECS_CONSUL_SERVER_URL, KV_PREFIX, MIGRATE_PATH, NETWORK_MODE
-      KV_PREFIX: ${{ matrix.environment }}
-      MIGRATE_PATH: "/app/migrations/"
+      EXPORTED_ENVIRONMENTS: DB_PASSWORD, DB_HOST, DB_USERNAME, DB_PORT, DB_DATABASE, DB_MIGRATE_PATH, SERVICE_NAME
+      DB_MIGRATE_PATH: "/app/migrations/"
+      DB_HOST: ${{ secrets.DB_HOST }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      DB_USERNAME: ${{ secrets.DB_USERNAME }}
+      DB_PORT: 5432
+      DB_DATABASE: ${{ matrix.environment }}
+      SERVICE_NAME: ${{ matrix.environment }}_pharmacy_auth
       ACTIVE_ENVIRONMENT: ${{ matrix.environment }}
     steps:
       - run: |

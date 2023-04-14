@@ -8,7 +8,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/google/wire v0.5.0
 	github.com/hellofresh/health-go/v5 v5.0.0
-	github.com/hoquangnam45/pharmacy-common-go v0.0.0-20230413164222-a39c251c0858
+	github.com/hoquangnam45/pharmacy-common-go v0.0.0-20230414060046-2e7d68d8518b
 	github.com/redis/go-redis/v9 v9.0.2
 	go.uber.org/automaxprocs v1.5.1
 	google.golang.org/api v0.112.0
@@ -24,6 +24,7 @@ require (
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/go-kratos/aegis v0.1.4 // indirect
 	github.com/go-kratos/consul v0.1.5 // indirect
+	github.com/go-kratos/kratos/contrib/registry/consul/v2 v2.0.0-20230410063538-3958f9d5c06e // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-playground/form/v4 v4.2.0 // indirect
@@ -33,7 +34,7 @@ require (
 	github.com/googleapis/enterprise-certificate-proxy v0.2.3 // indirect
 	github.com/googleapis/gax-go/v2 v2.7.0 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
-	github.com/hashicorp/consul/api v1.18.0 // indirect
+	github.com/hashicorp/consul/api v1.19.1 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/lib/pq v1.10.7 // indirect
 	go.opencensus.io v0.24.0 // indirect
@@ -44,7 +45,7 @@ require (
 )
 
 require (
-	github.com/armon/go-metrics v0.3.9 // indirect
+	github.com/armon/go-metrics v0.3.10 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/fatih/color v1.12.0 // indirect

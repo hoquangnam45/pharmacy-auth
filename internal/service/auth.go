@@ -32,26 +32,32 @@ func (s *Auth) Token(ctx context.Context, grantRequest *v1.GrantRequest) (*v1.Gr
 }
 
 func (s *Auth) Register(ctx context.Context, registerRequest *v1.GrantRequest) (*v1.GrantAccess, error) {
-	return h.FlatMap3(
-		h.LiftJ(mapApiGrantRequest)(registerRequest),
-		h.Lift(s.uc.Register),
-		h.Lift(s.uc.GrantAccess),
-		h.LiftJ(mapBizGrantAccess),
-	).EvalWithContext(ctx)
+	return biz.Query(s.uc, func() (*v1.GrantAccess, error) {
+		return h.FlatMap3(
+			h.LiftJ(mapApiGrantRequest)(registerRequest),
+			h.Lift(s.uc.Register),
+			h.Lift(s.uc.GrantAccess),
+			h.LiftJ(mapBizGrantAccess),
+		).EvalWithContext(ctx)
+	})
 }
 
 func (s *Auth) Logout(ctx context.Context, logoutRequest *v1.LogoutRequest) (*emptypb.Empty, error) {
-	return h.FlatMap(
-		h.LiftE(s.uc.Logout)(logoutRequest.RefreshToken),
-		h.LiftJ(empty[any]),
-	).EvalWithContext(ctx)
+	return biz.Query(s.uc, func() (*emptypb.Empty, error) {
+		return h.FlatMap(
+			h.LiftE(s.uc.Logout)(logoutRequest.RefreshToken),
+			h.LiftJ(empty[any]),
+		).EvalWithContext(ctx)
+	})
 }
 
 func (s *Auth) Activate(ctx context.Context, activateRequest *v1.ActivateRequest) (*emptypb.Empty, error) {
-	return h.FlatMap(
-		h.LiftE(s.uc.Activate)(activateRequest.UserId),
-		h.LiftJ(empty[any]),
-	).EvalWithContext(ctx)
+	return biz.Query(s.uc, func() (*emptypb.Empty, error) {
+		return h.FlatMap(
+			h.LiftE(s.uc.Activate)(activateRequest.UserId),
+			h.LiftJ(empty[any]),
+		).EvalWithContext(ctx)
+	})
 }
 
 func (s *Auth) CheckPermission() error {

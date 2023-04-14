@@ -1,9 +1,8 @@
 package data
 
 import (
-	"github.com/hoquangnam45/pharmacy-auth/internal/biz"
-
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/hoquangnam45/pharmacy-auth/internal/biz"
 )
 
 type clientRepo struct {

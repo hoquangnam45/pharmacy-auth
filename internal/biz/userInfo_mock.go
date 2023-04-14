@@ -5,11 +5,15 @@ import (
 	"github.com/hoquangnam45/pharmacy-common-go/util/request"
 )
 
-type UserInfoMock struct{}
+func NewUserInfoClientMock() UserInfoClient {
+	return &userInfoMock{}
+}
 
-func (s *UserInfoMock) FetchUserInfo(username string, email string, phoneNumber string) (*UserInfo, error) {
+type userInfoMock struct{}
+
+func (s *userInfoMock) FetchUserInfo(username *string, email *string, phoneNumber *string) (*UserInfo, error) {
 	// Already existed user
-	if email == "hoquangnam45@gmail.com" {
+	if email != nil && *email == "hoquangnam45@gmail.com" {
 		return &UserInfo{
 			Id:          "00000000-0000-0000-0000-000000000000",
 			Email:       "hoquangnam45@gmail.com",
@@ -21,9 +25,9 @@ func (s *UserInfoMock) FetchUserInfo(username string, email string, phoneNumber 
 	}
 }
 
-func (s *UserInfoMock) CreateUserInfo(username, email, phoneNumber string) (*UserInfo, error) {
+func (s *userInfoMock) CreateUserInfo(username, email, phoneNumber *string) (*UserInfo, error) {
 	// New user
-	if email == "hoquangnam46@gmail.com" {
+	if email != nil && *email == "hoquangnam46@gmail.com" {
 		return &UserInfo{
 			Id:          uuid.New().String(),
 			Email:       uuid.New().String(),
@@ -32,13 +36,13 @@ func (s *UserInfoMock) CreateUserInfo(username, email, phoneNumber string) (*Use
 		}, nil
 	}
 	// Already existed user
-	if email == "hoquangnam45@gmail.com" {
+	if email != nil && *email == "hoquangnam45@gmail.com" {
 		return nil, request.NewErrorResponse("credentials already exist", 409)
 	}
 	return nil, request.NewErrorResponse("bad request", 400)
 }
 
 // TODO: Implement this
-func (s *UserInfoMock) RemoveUserInfo(username, email, phoneNumber string) error {
+func (s *userInfoMock) RemoveUserInfo(username, email, phoneNumber *string) error {
 	return nil
 }
