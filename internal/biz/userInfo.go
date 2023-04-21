@@ -1,17 +1,12 @@
 package biz
 
 import (
-	"errors"
-	"fmt"
-	"net/http"
+	"context"
 
-	"github.com/hoquangnam45/pharmacy-auth/internal/util"
+	"github.com/hoquangnam45/pharmacy-common-go/microservice/consul"
+	"github.com/hoquangnam45/pharmacy-common-go/util"
 	h "github.com/hoquangnam45/pharmacy-common-go/util/errorHandler"
-
-	"github.com/hoquangnam45/pharmacy-common-go/util/request"
 )
-
-var ErrUserNotExist = errors.New("user not exist")
 
 type UserInfoClient interface {
 	FetchUserInfo(username, email, phoneNumber *string) (*UserInfo, error)
@@ -27,76 +22,59 @@ type UserInfo struct {
 }
 
 type userInfoClient struct {
-	lb *util.LoadBalancer
+	client *consul.Client
 }
 
-func NewUserInfoClient(lb *util.LoadBalancer) UserInfoClient {
-	return &userInfoClient{lb}
+func NewUserInfoClient(c *consul.Client) UserInfoClient {
+	return &userInfoClient{
+		client: c,
+	}
 }
 
 func (s *userInfoClient) FetchUserInfo(username, email, phoneNumber *string) (*UserInfo, error) {
-	return h.FlatMap3(
-		h.Lift(s.lb.LoadBalancing)("pharmacy-user-svc"),
-		h.Lift(func(addr string) (string, error) {
-			query := ""
-			if email != nil {
-				query = fmt.Sprintf("email=%s", email)
-			} else if phoneNumber != nil {
-				query = fmt.Sprintf("phoneNumber=%s", email)
-			} else if username != nil {
-				query = fmt.Sprintf("username=%s", email)
-			}
-			return fmt.Sprintf("%s/user?%s", addr, query), nil
+	return h.FlatMap(
+		h.FactoryM(func() (map[string]any, error) {
+			resp := map[string]any{}
+			err := s.client.CallService(context.Background(), "user", "FetchUserInfo", "", map[string]*string{
+				"email":       email,
+				"phoneNumber": phoneNumber,
+				"username":    username,
+			}, map[string]any{})
+			return resp, err
 		}),
-		h.Lift(http.Get),
-		h.Lift(func(r *http.Response) (*UserInfo, error) {
-			defer r.Body.Close()
-			return h.FlatMap(
-				h.Lift(request.NewRequestResponse)(r),
-				h.Lift(func(resp *request.Response) (*UserInfo, error) {
-					switch resp.StatusCode {
-					case 200:
-						return request.ToJsonResponse[UserInfo](resp).Get(&UserInfo{})
-					case 404:
-						return nil, ErrUserNotExist
-					default:
-						return nil, request.ToErrorResponse(resp)
-					}
-				})).Eval()
-		})).Eval()
+		h.Lift(MapUserInfo)).Eval()
 }
 
 func (s *userInfoClient) CreateUserInfo(username, email, phoneNumber *string) (*UserInfo, error) {
-	return h.FlatMap3(
-		h.Lift(s.lb.LoadBalancing)("pharmacy-user-svc"),
-		h.Lift(func(addr string) (string, error) {
-			query := ""
-			if email != nil {
-				query = fmt.Sprintf("email=%s", email)
-			} else if phoneNumber != nil {
-				query = fmt.Sprintf("phoneNumber=%s", email)
-			} else if username != nil {
-				query = fmt.Sprintf("username=%s", email)
-			}
-			return fmt.Sprintf("%s/user?%s", addr, query), nil
+	return h.FlatMap(
+		h.FactoryM(func() (map[string]any, error) {
+			resp := map[string]any{}
+			err := s.client.CallService(context.Background(), "user", "CreateUserInfo", "", map[string]*string{
+				"email":       email,
+				"phoneNumber": phoneNumber,
+				"username":    username,
+			}, map[string]any{})
+			return resp, err
 		}),
-		h.Lift(http.Get),
-		h.Lift(func(r *http.Response) (*UserInfo, error) {
-			defer r.Body.Close()
-			return h.FlatMap(
-				h.Lift(request.NewRequestResponse)(r),
-				h.Lift(func(resp *request.Response) (*UserInfo, error) {
-					switch resp.StatusCode {
-					case 200:
-						return request.ToJsonResponse[UserInfo](resp).Get(&UserInfo{})
-					default:
-						return nil, request.ToErrorResponse(resp)
-					}
-				})).Eval()
-		})).Eval()
+		h.Lift(MapUserInfo)).Eval()
 }
 
-// TODO: Implement this
 func (s *userInfoClient) RemoveUserInfo(username, email, phoneNumber *string) error {
-	return nil
+	return h.FactoryM(func() (map[string]any, error) {
+		resp := map[string]any{}
+
+		err := s.client.CallService(context.Background(), "user", "CreateUserInfo", "", map[string]*string{
+			"email":       email,
+			"phoneNumber": phoneNumber,
+			"username":    username,
+		}, map[string]any{})
+		return resp, err
+	}).Error()
+}
+
+func MapUserInfo(m map[string]any) (*UserInfo, error) {
+	return h.FlatMap(
+		h.Lift(util.MarshalJson[map[string]any])(m),
+		h.Lift(util.UnmarshalJson(&UserInfo{})),
+	).Eval()
 }

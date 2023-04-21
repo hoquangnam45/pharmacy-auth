@@ -5,9 +5,9 @@ import (
 	"github.com/hoquangnam45/pharmacy-auth/internal/conf"
 	"github.com/hoquangnam45/pharmacy-auth/internal/service"
 
-	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/middleware/recovery"
 	"github.com/go-kratos/kratos/v2/transport/http"
+	"github.com/hoquangnam45/pharmacy-common-go/util/log"
 )
 
 // NewHTTPServer new an HTTP server.

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/go-kratos/kratos/v2/errors"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
 	"github.com/hoquangnam45/pharmacy-auth/internal/constant/grantType"
@@ -12,21 +13,9 @@ import (
 	"github.com/hoquangnam45/pharmacy-common-go/helper/db"
 	"github.com/hoquangnam45/pharmacy-common-go/util"
 	h "github.com/hoquangnam45/pharmacy-common-go/util/errorHandler"
+	"github.com/hoquangnam45/pharmacy-common-go/util/log"
 	"github.com/hoquangnam45/pharmacy-common-go/util/request"
 	"gorm.io/gorm"
-
-	"github.com/go-kratos/kratos/v2/errors"
-	"github.com/go-kratos/kratos/v2/log"
-)
-
-var (
-	ErrNotSupportOauthProvider = errors.New(401, "not supported openid provider", "not supported openid provider")
-	ErrNotSupportGrantType     = errors.New(401, "not supported grant type", "not supported grant type")
-	ErrInvalidTpAccessToken    = errors.New(401, "invalid trusted third party access token", "invalid trusted third party access token")
-	ErrInvalidCredential       = errors.New(401, "invalid credential", "invalid credential")
-	ErrCredentialAlreadyExist  = errors.New(409, "crendential already exist", "crendential already exist")
-	ErrInvalidClientId         = errors.New(401, "invalid client id", "invalid client id")
-	ErrUnauthorizedAccess      = errors.New(401, "unauthorized access", "unauthorized access")
 )
 
 type LoginDetail struct {
@@ -76,7 +65,7 @@ type LoginDetailUsecase struct {
 	clientRepo       ClientRepo
 	userInfoClient   UserInfoClient
 	TransactionManager
-	log *log.Helper
+	log log.Logger
 }
 
 func NewLoginDetailUseCase(userInfoClient UserInfoClient, repo LoginDetailRepo, clientRepo ClientRepo, refreshTokenRepo RefreshTokenRepo, logger log.Logger, transactionManager TransactionManager) *LoginDetailUsecase {
@@ -84,7 +73,7 @@ func NewLoginDetailUseCase(userInfoClient UserInfoClient, repo LoginDetailRepo, 
 		repo:               repo,
 		refreshTokenRepo:   refreshTokenRepo,
 		clientRepo:         clientRepo,
-		log:                log.NewHelper(logger),
+		log:                logger,
 		TransactionManager: transactionManager,
 		userInfoClient:     userInfoClient,
 	}
@@ -183,7 +172,16 @@ func (s *LoginDetailUsecase) Register(registerRequest *GrantRequest) (*Authentic
 		}),
 	).EvalWithHandlerE(func(err error) error {
 		requestErr := &request.Error{}
+		groupErr := &util.GroupError{}
+		if !errors.As(err, groupErr) || !errors.Is(groupErr.Group, ErrUserInfoClientGroup) || !errors.Is(groupErr.Cause, ErrResourceAlreadyExists) {
+			s.userInfoClient.RemoveUserInfo(registerRequest.Username, registerRequest.Email, registerRequest.Password)
+		} else {
+			// Credential should already exist here
+			return ErrCredentialAlreadyExist
+		}
 		if db.IsDuplicatedError(err) || errors.As(err, &requestErr) && requestErr.StatusCode == 409 {
+			// This should not be happening, it should return err from user info client first, please check the db for inconsistency again
+			s.log.Error("inconsistency between auth service and user info service of user[email=%s, username=%s]", registerRequest.Email, registerRequest.Username)
 			return ErrCredentialAlreadyExist
 		}
 		return nil
@@ -288,7 +286,7 @@ func (s *LoginDetailUsecase) trustedTpAuthenticated(fetcher TrustedTpInfoFetcher
 	return h.FlatMap2(
 		h.Lift(fetcher)(accessToken),
 		h.Lift(func(userInfo *UserInfo) (*UserInfo, error) {
-			if userInfo, err := s.userInfoClient.FetchUserInfo(nil, &userInfo.Email, nil); errors.Is(err, ErrUserNotExist) {
+			if userInfo, err := s.userInfoClient.FetchUserInfo(nil, &userInfo.Email, nil); errors.Is(err, ErrResourceAlreadyExists) {
 				return s.userInfoClient.CreateUserInfo(nil, &userInfo.Email, nil)
 			} else {
 				return userInfo, nil
@@ -377,6 +375,7 @@ func (s *LoginDetailUsecase) refreshTokenAuthenticated(grantRequest *GrantReques
 	return auth, err
 }
 
+// TODO: Implement this method
 func (s *LoginDetailUsecase) CheckPermission() error {
 	return nil
 }

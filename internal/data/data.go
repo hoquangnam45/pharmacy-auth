@@ -9,8 +9,8 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 
-	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/wire"
+	"github.com/hoquangnam45/pharmacy-common-go/util/log"
 )
 
 // ProviderSet is data providers.

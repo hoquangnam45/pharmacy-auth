@@ -3,19 +3,18 @@ package data
 import (
 	"github.com/google/uuid"
 	"github.com/hoquangnam45/pharmacy-auth/internal/biz"
-
-	"github.com/go-kratos/kratos/v2/log"
+	"github.com/hoquangnam45/pharmacy-common-go/util/log"
 )
 
 type loginDetailRepo struct {
 	data *Data
-	log  *log.Helper
+	log  log.Logger
 }
 
 func NewLoginDetailRepo(data *Data, logger log.Logger) biz.LoginDetailRepo {
 	return &loginDetailRepo{
 		data: data,
-		log:  log.NewHelper(logger),
+		log:  logger,
 	}
 }
 

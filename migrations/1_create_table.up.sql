@@ -1,13 +1,5 @@
 CREATE SCHEMA auth;
 
-CREATE TABLE auth.config(
-  id UUID NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
-  key VARCHAR(255) NOT NULL,
-  namespace VARCHAR(255),
-  value VARCHAR(255)
-);
-ALTER TABLE auth.config ADD UNIQUE(namespace, key);
-
 CREATE TABLE auth.login_detail(
   id UUID NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL UNIQUE,

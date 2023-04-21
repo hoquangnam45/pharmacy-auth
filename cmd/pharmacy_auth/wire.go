@@ -11,9 +11,9 @@ import (
 	"github.com/hoquangnam45/pharmacy-auth/internal/data"
 	"github.com/hoquangnam45/pharmacy-auth/internal/server"
 	"github.com/hoquangnam45/pharmacy-auth/internal/service"
+	"github.com/hoquangnam45/pharmacy-common-go/util/log"
 
 	"github.com/go-kratos/kratos/v2"
-	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/wire"
 )
 

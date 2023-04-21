@@ -99,16 +99,3 @@ func mapApiGrantRequest(req *v1.GrantRequest) *biz.GrantRequest {
 func empty[T any](in T) *emptypb.Empty {
 	return &emptypb.Empty{}
 }
-
-type Valueable interface {
-	Value() string
-}
-
-func StringPtr[T Valueable](a *T) *string {
-	if a == nil {
-		return nil
-	}
-	r := *a
-	str := r.Value()
-	return &str
-}

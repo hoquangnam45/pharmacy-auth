@@ -3,18 +3,18 @@ package data
 import (
 	"github.com/hoquangnam45/pharmacy-auth/internal/biz"
 
-	"github.com/go-kratos/kratos/v2/log"
+	"github.com/hoquangnam45/pharmacy-common-go/util/log"
 )
 
 type refreshTokenRepo struct {
 	data *Data
-	log  *log.Helper
+	log  log.Logger
 }
 
 func NewRefreshTokenRepo(data *Data, logger log.Logger) biz.RefreshTokenRepo {
 	return &refreshTokenRepo{
 		data: data,
-		log:  log.NewHelper(logger),
+		log:  logger,
 	}
 }
 

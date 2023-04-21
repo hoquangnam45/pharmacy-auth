@@ -42,7 +42,7 @@ func (s *userInfoMock) CreateUserInfo(username, email, phoneNumber *string) (*Us
 	return nil, request.NewErrorResponse("bad request", 400)
 }
 
-// TODO: Implement this
+// TODO: Implement this mock behavior to test
 func (s *userInfoMock) RemoveUserInfo(username, email, phoneNumber *string) error {
 	return nil
 }

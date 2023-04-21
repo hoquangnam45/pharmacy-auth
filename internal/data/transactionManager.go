@@ -1,20 +1,20 @@
 package data
 
 import (
-	"github.com/go-kratos/kratos/v2/log"
 	"github.com/hoquangnam45/pharmacy-auth/internal/biz"
+	"github.com/hoquangnam45/pharmacy-common-go/util/log"
 	"gorm.io/gorm"
 )
 
 type transactionManager struct {
 	data *Data
-	log  *log.Helper
+	log  log.Logger
 }
 
 func NewTransactionManager(data *Data, logger log.Logger) biz.TransactionManager {
 	return &transactionManager{
 		data: data,
-		log:  log.NewHelper(logger),
+		log:  logger,
 	}
 }
 

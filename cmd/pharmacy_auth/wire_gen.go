@@ -8,12 +8,12 @@ package main
 
 import (
 	"github.com/go-kratos/kratos/v2"
-	"github.com/go-kratos/kratos/v2/log"
 	"github.com/hoquangnam45/pharmacy-auth/internal/biz"
 	"github.com/hoquangnam45/pharmacy-auth/internal/conf"
 	"github.com/hoquangnam45/pharmacy-auth/internal/data"
 	"github.com/hoquangnam45/pharmacy-auth/internal/server"
 	"github.com/hoquangnam45/pharmacy-auth/internal/service"
+	"github.com/hoquangnam45/pharmacy-common-go/util/log"
 )
 
 import (
