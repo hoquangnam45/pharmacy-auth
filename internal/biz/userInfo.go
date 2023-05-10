@@ -3,22 +3,16 @@ package biz
 import (
 	"context"
 
+	"github.com/hoquangnam45/pharmacy-auth/internal/dto"
 	"github.com/hoquangnam45/pharmacy-common-go/microservice/consul"
 	"github.com/hoquangnam45/pharmacy-common-go/util"
 	h "github.com/hoquangnam45/pharmacy-common-go/util/errorHandler"
 )
 
 type UserInfoClient interface {
-	FetchUserInfo(username, email, phoneNumber *string) (*UserInfo, error)
-	CreateUserInfo(username, email, phoneNumber *string) (*UserInfo, error)
+	FetchUserInfo(username, email, phoneNumber *string) (*dto.UserInfo, error)
+	CreateUserInfo(username, email, phoneNumber *string) (*dto.UserInfo, error)
 	RemoveUserInfo(username, email, phoneNumber *string) error
-}
-
-type UserInfo struct {
-	Id          string
-	Email       string
-	Username    string
-	PhoneNumber string
 }
 
 type userInfoClient struct {
@@ -31,7 +25,7 @@ func NewUserInfoClient(c *consul.Client) UserInfoClient {
 	}
 }
 
-func (s *userInfoClient) FetchUserInfo(username, email, phoneNumber *string) (*UserInfo, error) {
+func (s *userInfoClient) FetchUserInfo(username, email, phoneNumber *string) (*dto.UserInfo, error) {
 	return h.FlatMap(
 		h.FactoryM(func() (map[string]any, error) {
 			resp := map[string]any{}
@@ -45,7 +39,7 @@ func (s *userInfoClient) FetchUserInfo(username, email, phoneNumber *string) (*U
 		h.Lift(MapUserInfo)).Eval()
 }
 
-func (s *userInfoClient) CreateUserInfo(username, email, phoneNumber *string) (*UserInfo, error) {
+func (s *userInfoClient) CreateUserInfo(username, email, phoneNumber *string) (*dto.UserInfo, error) {
 	return h.FlatMap(
 		h.FactoryM(func() (map[string]any, error) {
 			resp := map[string]any{}
@@ -72,9 +66,9 @@ func (s *userInfoClient) RemoveUserInfo(username, email, phoneNumber *string) er
 	}).Error()
 }
 
-func MapUserInfo(m map[string]any) (*UserInfo, error) {
+func MapUserInfo(m map[string]any) (*dto.UserInfo, error) {
 	return h.FlatMap(
 		h.Lift(util.MarshalJson[map[string]any])(m),
-		h.Lift(util.UnmarshalJson(&UserInfo{})),
+		h.Lift(util.UnmarshalJson(&dto.UserInfo{})),
 	).Eval()
 }

@@ -1,4 +1,4 @@
-package biz
+package dto
 
 import (
 	"github.com/hoquangnam45/pharmacy-auth/internal/constant/grantType"

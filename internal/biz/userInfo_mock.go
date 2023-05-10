@@ -2,6 +2,7 @@ package biz
 
 import (
 	"github.com/google/uuid"
+	"github.com/hoquangnam45/pharmacy-auth/internal/dto"
 	"github.com/hoquangnam45/pharmacy-common-go/util/request"
 )
 
@@ -11,10 +12,10 @@ func NewUserInfoClientMock() UserInfoClient {
 
 type userInfoMock struct{}
 
-func (s *userInfoMock) FetchUserInfo(username *string, email *string, phoneNumber *string) (*UserInfo, error) {
+func (s *userInfoMock) FetchUserInfo(username *string, email *string, phoneNumber *string) (*dto.UserInfo, error) {
 	// Already existed user
 	if email != nil && *email == "hoquangnam45@gmail.com" {
-		return &UserInfo{
+		return &dto.UserInfo{
 			Id:          "00000000-0000-0000-0000-000000000000",
 			Email:       "hoquangnam45@gmail.com",
 			Username:    "hoquangnam45",
@@ -25,10 +26,10 @@ func (s *userInfoMock) FetchUserInfo(username *string, email *string, phoneNumbe
 	}
 }
 
-func (s *userInfoMock) CreateUserInfo(username, email, phoneNumber *string) (*UserInfo, error) {
+func (s *userInfoMock) CreateUserInfo(username, email, phoneNumber *string) (*dto.UserInfo, error) {
 	// New user
 	if email != nil && *email == "hoquangnam46@gmail.com" {
-		return &UserInfo{
+		return &dto.UserInfo{
 			Id:          uuid.New().String(),
 			Email:       uuid.New().String(),
 			Username:    uuid.New().String(),

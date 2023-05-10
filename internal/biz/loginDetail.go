@@ -10,6 +10,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/hoquangnam45/pharmacy-auth/internal/constant/grantType"
 	"github.com/hoquangnam45/pharmacy-auth/internal/constant/oauthProviderType"
+	"github.com/hoquangnam45/pharmacy-auth/internal/data"
+	"github.com/hoquangnam45/pharmacy-auth/internal/dto"
+	"github.com/hoquangnam45/pharmacy-auth/internal/model"
 	"github.com/hoquangnam45/pharmacy-common-go/helper/db"
 	"github.com/hoquangnam45/pharmacy-common-go/util"
 	h "github.com/hoquangnam45/pharmacy-common-go/util/errorHandler"
@@ -18,57 +21,18 @@ import (
 	"gorm.io/gorm"
 )
 
-type LoginDetail struct {
-	Id        uuid.UUID `gorm:"type:uuid;default:gen_random_uuid()"`
-	UserId    string
-	Password  string
-	Activated bool
-}
-
-type LoginDetailRepo interface {
-	Save(*LoginDetail) (*LoginDetail, error)
-	FindByID(uuid.UUID) (*LoginDetail, error)
-	FindByUserId(userId string) (*LoginDetail, error)
-}
-
-type RefreshTokenRepo interface {
-	Save(*RefreshToken) (*RefreshToken, error)
-	DeleteById(id string) error
-	FindById(id string) (*RefreshToken, error)
-}
-
-type TransactionManager interface {
-	Run(func() error) error
-}
-
-type ClientRepo interface {
-	FindByClientID(clientId string) (*Client, error)
-}
-
-func Query[T any](txManager TransactionManager, queryFn func() (T, error)) (T, error) {
-	var ret T
-	err := txManager.Run(func() error {
-		retI, err := queryFn()
-		if err == nil {
-			ret = retI
-		}
-		return err
-	})
-	return ret, err
-}
-
-type TrustedTpInfoFetcher func(accessToken string) (*UserInfo, error)
+type TrustedTpInfoFetcher func(accessToken string) (*dto.UserInfo, error)
 
 type LoginDetailUsecase struct {
-	repo             LoginDetailRepo
-	refreshTokenRepo RefreshTokenRepo
-	clientRepo       ClientRepo
+	repo             data.LoginDetailRepo
+	refreshTokenRepo data.RefreshTokenRepo
+	clientRepo       data.ClientRepo
 	userInfoClient   UserInfoClient
-	TransactionManager
+	data.TransactionManager
 	log log.Logger
 }
 
-func NewLoginDetailUseCase(userInfoClient UserInfoClient, repo LoginDetailRepo, clientRepo ClientRepo, refreshTokenRepo RefreshTokenRepo, logger log.Logger, transactionManager TransactionManager) *LoginDetailUsecase {
+func NewLoginDetailUseCase(userInfoClient UserInfoClient, repo data.LoginDetailRepo, clientRepo data.ClientRepo, refreshTokenRepo data.RefreshTokenRepo, logger log.Logger, transactionManager data.TransactionManager) *LoginDetailUsecase {
 	return &LoginDetailUsecase{
 		repo:               repo,
 		refreshTokenRepo:   refreshTokenRepo,
@@ -79,8 +43,8 @@ func NewLoginDetailUseCase(userInfoClient UserInfoClient, repo LoginDetailRepo, 
 	}
 }
 
-func (s *LoginDetailUsecase) GenerateAccessToken(refreshToken *RefreshToken) (string, error) {
-	claims := AuthClaims{}
+func (s *LoginDetailUsecase) GenerateAccessToken(refreshToken *model.RefreshToken) (string, error) {
+	claims := dto.AuthClaims{}
 	client := refreshToken.Client
 	claims.ExpiresAt = jwt.NewNumericDate(refreshToken.IssuedAt.Add(client.AccessTokenTtl.ToDuration()))
 	claims.IssuedAt = jwt.NewNumericDate(refreshToken.IssuedAt)
@@ -102,7 +66,7 @@ func (s *LoginDetailUsecase) Activate(id string) error {
 	return h.FlatMap2(
 		h.Lift(uuid.Parse)(id),
 		h.Lift(s.repo.FindByID),
-		h.LiftE(func(loginDetail *LoginDetail) error {
+		h.LiftE(func(loginDetail *model.LoginDetail) error {
 			if !loginDetail.Activated {
 				loginDetail.Activated = true
 				return h.Lift(s.repo.Save)(loginDetail).Error()
@@ -116,7 +80,7 @@ func (s *LoginDetailUsecase) Logout(refreshToken string) error {
 	return s.refreshTokenRepo.DeleteById(refreshToken)
 }
 
-func (s *LoginDetailUsecase) FindClient(clientId string) (*Client, error) {
+func (s *LoginDetailUsecase) FindClient(clientId string) (*model.Client, error) {
 	return h.Lift(s.clientRepo.FindByClientID)(clientId).EvalWithHandlerE(func(err error) error {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return ErrInvalidClientId
@@ -125,7 +89,7 @@ func (s *LoginDetailUsecase) FindClient(clientId string) (*Client, error) {
 	})
 }
 
-func (s *LoginDetailUsecase) Login(grantRequest *GrantRequest) (*Authentication, error) {
+func (s *LoginDetailUsecase) Login(grantRequest *dto.GrantRequest) (*dto.Authentication, error) {
 	switch grantRequest.GrantType.Normalize() {
 	case grantType.Password:
 		return s.passwordAuthenticated(grantRequest)
@@ -145,24 +109,24 @@ func (s *LoginDetailUsecase) Login(grantRequest *GrantRequest) (*Authentication,
 	}
 }
 
-func (s *LoginDetailUsecase) Register(registerRequest *GrantRequest) (*Authentication, error) {
+func (s *LoginDetailUsecase) Register(registerRequest *dto.GrantRequest) (*dto.Authentication, error) {
 	return h.FlatMap2(
-		h.FactoryM(func() (*UserInfo, error) {
+		h.FactoryM(func() (*dto.UserInfo, error) {
 			return s.userInfoClient.CreateUserInfo(registerRequest.Username, registerRequest.Email, registerRequest.PhoneNumber)
 		}),
-		h.Lift(func(userInfo *UserInfo) (*LoginDetail, error) {
+		h.Lift(func(userInfo *dto.UserInfo) (*model.LoginDetail, error) {
 			return h.FlatMap(
 				h.Lift(util.HashPassword)(*registerRequest.Password),
-				h.Lift(func(pass string) (*LoginDetail, error) {
-					return s.repo.Save(&LoginDetail{
+				h.Lift(func(pass string) (*model.LoginDetail, error) {
+					return s.repo.Save(&model.LoginDetail{
 						UserId:    userInfo.Id,
 						Password:  pass,
 						Activated: false,
 					})
 				})).Eval()
 		}),
-		h.LiftJ(func(loginDetail *LoginDetail) *Authentication {
-			return &Authentication{
+		h.LiftJ(func(loginDetail *model.LoginDetail) *dto.Authentication {
+			return &dto.Authentication{
 				Subject:       loginDetail.UserId,
 				Authenticated: true,
 				Credential:    loginDetail.Password,
@@ -188,7 +152,7 @@ func (s *LoginDetailUsecase) Register(registerRequest *GrantRequest) (*Authentic
 	})
 }
 
-func (s *LoginDetailUsecase) GrantAccess(authentication *Authentication) (*GrantAccess, error) {
+func (s *LoginDetailUsecase) GrantAccess(authentication *dto.Authentication) (*dto.GrantAccess, error) {
 	if authentication == nil || !authentication.Authenticated {
 		return nil, ErrUnauthorizedAccess
 	}
@@ -216,15 +180,15 @@ func (s *LoginDetailUsecase) GrantAccess(authentication *Authentication) (*Grant
 	}
 }
 
-func (s *LoginDetailUsecase) grantAccessByRefreshToken(authentication *Authentication, client *Client) (*GrantAccess, error) {
-	var grantAccess *GrantAccess = nil
+func (s *LoginDetailUsecase) grantAccessByRefreshToken(authentication *dto.Authentication, client *model.Client) (*dto.GrantAccess, error) {
+	var grantAccess *dto.GrantAccess = nil
 	err := s.Run(func() error {
-		refreshToken := authentication.Credential.(*RefreshToken)
+		refreshToken := authentication.Credential.(*model.RefreshToken)
 		now := time.Now()
 		if err := s.refreshTokenRepo.DeleteById(refreshToken.Id); err != nil {
 			return err
 		}
-		newRefreshToken, err := s.refreshTokenRepo.Save(&RefreshToken{
+		newRefreshToken, err := s.refreshTokenRepo.Save(&model.RefreshToken{
 			Id:        base64.StdEncoding.EncodeToString([]byte(uuid.New().String())),
 			IssuedAt:  now,
 			ExpiredAt: now.Add(client.RefreshTokenTtl.ToDuration()),
@@ -239,7 +203,7 @@ func (s *LoginDetailUsecase) grantAccessByRefreshToken(authentication *Authentic
 		if err != nil {
 			return err
 		}
-		grantAccess = &GrantAccess{
+		grantAccess = &dto.GrantAccess{
 			RefreshToken: newRefreshToken.Id,
 			AccessToken:  accessToken,
 			Subject:      newRefreshToken.Subject,
@@ -253,9 +217,9 @@ func (s *LoginDetailUsecase) grantAccessByRefreshToken(authentication *Authentic
 	return grantAccess, err
 }
 
-func (s *LoginDetailUsecase) grantAccessCommon(authentication *Authentication, client *Client) (*GrantAccess, error) {
+func (s *LoginDetailUsecase) grantAccessCommon(authentication *dto.Authentication, client *model.Client) (*dto.GrantAccess, error) {
 	now := time.Now()
-	newRefreshToken := &RefreshToken{
+	newRefreshToken := &model.RefreshToken{
 		Id:        base64.StdEncoding.EncodeToString([]byte(uuid.New().String())),
 		IssuedAt:  now,
 		ExpiredAt: now.Add(client.RefreshTokenTtl.ToDuration()),
@@ -267,7 +231,7 @@ func (s *LoginDetailUsecase) grantAccessCommon(authentication *Authentication, c
 	if err != nil {
 		return nil, err
 	}
-	grantAccess := &GrantAccess{
+	grantAccess := &dto.GrantAccess{
 		RefreshToken: newRefreshToken.Id,
 		AccessToken:  accessToken,
 		Subject:      newRefreshToken.Subject,
@@ -282,18 +246,18 @@ func (s *LoginDetailUsecase) grantAccessCommon(authentication *Authentication, c
 	return grantAccess, nil
 }
 
-func (s *LoginDetailUsecase) trustedTpAuthenticated(fetcher TrustedTpInfoFetcher, accessToken string, clientId string) (*Authentication, error) {
+func (s *LoginDetailUsecase) trustedTpAuthenticated(fetcher TrustedTpInfoFetcher, accessToken string, clientId string) (*dto.Authentication, error) {
 	return h.FlatMap2(
 		h.Lift(fetcher)(accessToken),
-		h.Lift(func(userInfo *UserInfo) (*UserInfo, error) {
+		h.Lift(func(userInfo *dto.UserInfo) (*dto.UserInfo, error) {
 			if userInfo, err := s.userInfoClient.FetchUserInfo(nil, &userInfo.Email, nil); errors.Is(err, ErrResourceAlreadyExists) {
 				return s.userInfoClient.CreateUserInfo(nil, &userInfo.Email, nil)
 			} else {
 				return userInfo, nil
 			}
 		}),
-		h.Lift(func(userInfo *UserInfo) (*Authentication, error) {
-			return &Authentication{
+		h.Lift(func(userInfo *dto.UserInfo) (*dto.Authentication, error) {
+			return &dto.Authentication{
 				Subject:       userInfo.Id,
 				Authenticated: true,
 				Credential:    accessToken,
@@ -310,12 +274,12 @@ func (s *LoginDetailUsecase) trustedTpAuthenticated(fetcher TrustedTpInfoFetcher
 	})
 }
 
-func (s *LoginDetailUsecase) passwordAuthenticated(loginRequest *GrantRequest) (*Authentication, error) {
+func (s *LoginDetailUsecase) passwordAuthenticated(loginRequest *dto.GrantRequest) (*dto.Authentication, error) {
 	return h.FlatMap(
-		h.FactoryM(func() (*UserInfo, error) {
+		h.FactoryM(func() (*dto.UserInfo, error) {
 			return s.userInfoClient.FetchUserInfo(loginRequest.Username, loginRequest.Email, loginRequest.PhoneNumber)
 		}),
-		h.Lift(func(userInfo *UserInfo) (*Authentication, error) {
+		h.Lift(func(userInfo *dto.UserInfo) (*dto.Authentication, error) {
 			loginDetail, err := s.repo.FindByUserId(userInfo.Id)
 			if err != nil {
 				return nil, err
@@ -323,7 +287,7 @@ func (s *LoginDetailUsecase) passwordAuthenticated(loginRequest *GrantRequest) (
 			if !util.ComparePassword(*loginRequest.Password, loginDetail.Password) {
 				return nil, ErrInvalidCredential
 			}
-			return &Authentication{
+			return &dto.Authentication{
 				Subject:       userInfo.Id,
 				Authenticated: true,
 				Credential:    loginDetail.Password,
@@ -340,8 +304,8 @@ func (s *LoginDetailUsecase) passwordAuthenticated(loginRequest *GrantRequest) (
 	})
 }
 
-func (s *LoginDetailUsecase) refreshTokenAuthenticated(grantRequest *GrantRequest) (*Authentication, error) {
-	var auth *Authentication = nil
+func (s *LoginDetailUsecase) refreshTokenAuthenticated(grantRequest *dto.GrantRequest) (*dto.Authentication, error) {
+	var auth *dto.Authentication = nil
 	err := s.Run(func() error {
 		refreshToken, err := s.refreshTokenRepo.FindById(*grantRequest.RefreshToken)
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -355,9 +319,9 @@ func (s *LoginDetailUsecase) refreshTokenAuthenticated(grantRequest *GrantReques
 		}
 		authI, err := h.FlatMap2(
 			h.Lift(base64.StdEncoding.DecodeString)(refreshToken.ProtectedTicket),
-			h.Lift(util.UnmarshalJson(&UserInfo{})),
-			h.Lift(func(userInfo *UserInfo) (*Authentication, error) {
-				return &Authentication{
+			h.Lift(util.UnmarshalJson(&dto.UserInfo{})),
+			h.Lift(func(userInfo *dto.UserInfo) (*dto.Authentication, error) {
+				return &dto.Authentication{
 					Authenticated: true,
 					Subject:       refreshToken.Subject,
 					Credential:    refreshToken,

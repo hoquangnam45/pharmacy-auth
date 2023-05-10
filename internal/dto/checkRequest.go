@@ -1,3 +1,3 @@
-package biz
+package dto
 
 type CheckRequest struct{}
